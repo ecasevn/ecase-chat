@@ -1,29 +1,39 @@
 # Ecase Chat
 
-Một phòng chat realtime công khai, chạy hoàn toàn ở frontend với Vite.
+Một phòng chat công khai đơn giản: frontend chạy bằng Vite, API Node lưu toàn bộ tin nhắn vào `data/messages.json` trên server.
 
-## Chạy local
+## Chạy development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Vite đã được cấu hình lắng nghe trên IPv4 `0.0.0.0`. Truy cập từ máy khác bằng `http://IP_SERVER:5173` (hoặc port bạn đã cấu hình firewall/proxy). Mở link là vào ngay phòng chung; tên khách được tạo tự động và có thể sửa ngay trên thanh đầu trang. Người tạo phòng cần giữ tab mở để làm host tạm thời.
+Lệnh này chạy cả API ở port `3001` và Vite ở port `5173`. Vite lắng nghe IPv4 `0.0.0.0`, truy cập từ máy khác bằng:
 
-## Build để deploy
+```text
+http://IP_SERVER:5173
+```
+
+Tin nhắn được POST vào server, polling mỗi giây rồi render toàn bộ lịch sử chung. Không dùng `localStorage` để lưu tin nhắn và không phân trang.
+
+## Chạy production
 
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
-Lệnh preview cũng lắng nghe trên IPv4 `0.0.0.0`.
+Server Node sẽ vừa phục vụ thư mục `dist`, vừa chạy API tại port `3001` trên IPv4 `0.0.0.0`. Truy cập:
 
-Project không có backend riêng và không lưu tin nhắn trên server. Kết nối giữa các trình duyệt dùng WebRTC thông qua PeerJS Cloud ở bước signaling; dữ liệu chat đi trực tiếp qua peer đang giữ phòng. Vì vậy server chỉ cần phục vụ các file frontend tĩnh.
+```text
+http://IP_SERVER:3001
+```
 
-Lịch sử tối đa 100 tin nhắn cũng được lưu trong `localStorage` của từng trình duyệt để giữ lại sau khi refresh. Xóa dữ liệu site sẽ xóa lịch sử local.
+Có thể đổi port bằng biến môi trường:
 
-## Lưu ý vận hành
+```bash
+PORT=8080 npm start
+```
 
-Phòng cần có ít nhất một người đang mở tab để làm host. Nếu host rời đi, những người còn lại cần mở lại link khi host vào lại. Nếu cần chạy production độc lập hoàn toàn, có thể thay PeerJS Cloud bằng một PeerServer tự host sau này.
+File `data/messages.json` được tạo tự động và nằm trên server. File này đã được gitignore để dữ liệu chat không bị commit lên GitHub.
