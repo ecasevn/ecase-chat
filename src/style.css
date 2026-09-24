@@ -91,3 +91,28 @@ button { cursor: pointer; }
   .brand-lockup h1 { font-size: 14px; }
   .eyebrow { display: none; }
 }
+
+.admin-shell, .dev-shell { min-height: 100vh; background: #f5f4f1; }
+.admin-content, .dev-content { width: min(100%, 900px); margin: 0 auto; padding: 34px 22px; }
+.admin-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.admin-toolbar h2, .dev-card h2 { margin: 0 0 5px; color: var(--ink); font: 700 23px 'Space Grotesk', sans-serif; letter-spacing: -.04em; }
+.admin-toolbar p, .dev-card p { margin: 0; color: var(--muted); font-size: 13px; }
+.admin-toolbar code, .dev-card code { padding: 2px 5px; border-radius: 4px; color: #a05c31; background: var(--accent-soft); font: 11px 'DM Mono', monospace; }
+.danger-button { height: 36px; padding: 0 13px; border: 1px solid #efc9c9; border-radius: 7px; color: #b24d4d; background: #fff7f7; font-size: 12px; }
+.danger-button:hover { color: #fff; border-color: #c96666; background: #c96666; }
+.admin-total { color: var(--muted); font: 10px 'DM Mono', monospace; white-space: nowrap; }
+.admin-message-list, .dev-message-list { min-height: 400px; padding-top: 26px; }
+.dev-content { display: grid; gap: 24px; }
+.dev-card { padding: 23px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.dev-card .eyebrow { margin-bottom: 10px; color: var(--accent); }
+.dev-stats { display: flex; gap: 14px; margin-top: 22px; }
+.dev-stats > div { display: grid; gap: 5px; min-width: 155px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #faf9f7; }
+.dev-stats span { color: var(--muted); font: 10px 'DM Mono', monospace; }
+.dev-stats strong { color: var(--ink); font: 600 14px 'DM Mono', monospace; }
+
+@media (max-width: 680px) {
+  .admin-content, .dev-content { padding: 24px 15px; }
+  .admin-toolbar { align-items: flex-start; flex-direction: column; }
+  .admin-message-list, .dev-message-list { min-height: 300px; }
+  .dev-stats { flex-direction: column; }
+}

@@ -2,6 +2,7 @@ import './style.css';
 
 const app = document.querySelector('#app');
 const STORAGE_NAME = 'ecase-chat-name';
+const APP_MODE = getAppMode();
 
 const state = {
   name: cleanName(localStorage.getItem(STORAGE_NAME) || '') || makeGuestName(),
@@ -9,7 +10,9 @@ const state = {
   sending: false,
 };
 
-renderRoom();
+if (APP_MODE === 'admin') renderAdmin();
+else if (APP_MODE === 'dev') renderDev();
+else renderRoom();
 loadMessages();
 setInterval(loadMessages, 1000);
 
@@ -72,17 +75,98 @@ function renderRoom() {
   renderMessages();
 }
 
+function renderAdmin() {
+  app.innerHTML = `
+    <main class="admin-shell">
+      <header class="topbar admin-topbar">
+        <div class="brand-lockup compact">
+          <div class="brand-mark">e<span>·</span></div>
+          <div>
+            <p class="eyebrow">ECΛSE / ADMIN</p>
+            <h1>Quản lý chat</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span id="message-total" class="admin-total">0 tin nhắn</span>
+          <div id="server-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang nối server</span></div>
+        </div>
+      </header>
+      <section class="admin-content">
+        <div class="admin-toolbar">
+          <div>
+            <h2>Tất cả tin nhắn</h2>
+            <p>Dữ liệu đọc trực tiếp từ <code>data/messages.json</code>.</p>
+          </div>
+          <button id="clear-messages" class="danger-button" type="button">Xóa toàn bộ</button>
+        </div>
+        <div id="message-list" class="message-list admin-message-list" aria-live="polite"></div>
+      </section>
+    </main>
+  `;
+  document.querySelector('#clear-messages').addEventListener('click', clearMessages);
+  renderMessages();
+}
+
+function renderDev() {
+  app.innerHTML = `
+    <main class="dev-shell">
+      <header class="topbar dev-topbar">
+        <div class="brand-lockup compact">
+          <div class="brand-mark">e<span>·</span></div>
+          <div>
+            <p class="eyebrow">ECΛSE / DEV</p>
+            <h1>Developer monitor</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span id="message-total" class="admin-total">0 tin nhắn</span>
+          <div id="server-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang nối server</span></div>
+        </div>
+      </header>
+      <section class="dev-content">
+        <div class="dev-card">
+          <p class="eyebrow">DEV PORT / 13000</p>
+          <h2>API đang được theo dõi</h2>
+          <p>Trang này đọc toàn bộ dữ liệu từ <code>/api/messages</code> mỗi giây để test server.</p>
+          <div class="dev-stats">
+            <div><span>Tổng tin nhắn</span><strong id="dev-message-count">0</strong></div>
+            <div><span>Endpoint</span><strong>/api/messages</strong></div>
+          </div>
+        </div>
+        <div id="message-list" class="message-list dev-message-list" aria-live="polite"></div>
+      </section>
+    </main>
+  `;
+  renderMessages();
+}
+
 async function loadMessages() {
   try {
     const response = await fetch('/api/messages', { cache: 'no-store' });
     if (!response.ok) throw new Error(`GET /api/messages failed: ${response.status}`);
     const messages = await response.json();
     state.messages = Array.isArray(messages) ? messages : [];
+    const total = document.querySelector('#message-total');
+    const devCount = document.querySelector('#dev-message-count');
+    if (total) total.textContent = `${state.messages.length} tin nhắn`;
+    if (devCount) devCount.textContent = String(state.messages.length);
     setServerStatus('online', 'Server online');
     renderMessages();
   } catch (error) {
     console.error(error);
     setServerStatus('offline', 'Server chưa nối');
+  }
+}
+
+async function clearMessages() {
+  if (!window.confirm('Xóa toàn bộ tin nhắn trên server?')) return;
+  try {
+    const response = await fetch('/api/messages', { method: 'DELETE' });
+    if (!response.ok) throw new Error(`DELETE /api/messages failed: ${response.status}`);
+    await loadMessages();
+  } catch (error) {
+    console.error(error);
+    showSystemNotice('Không xóa được dữ liệu trên server.');
   }
 }
 
@@ -198,4 +282,11 @@ function formatTime(timestamp) {
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+function getAppMode() {
+  const hostname = window.location.hostname;
+  if (window.location.port === '5174' || hostname.startsWith('admin.')) return 'admin';
+  if (window.location.port === '13000' || hostname.startsWith('dev.')) return 'dev';
+  return 'user';
 }

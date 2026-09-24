@@ -8,7 +8,7 @@ const rootDir = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const dataDir = join(rootDir, 'data');
 const dataFile = join(dataDir, 'messages.json');
 const distDir = join(rootDir, 'dist');
-const host = '0.0.0.0';
+const host = '127.0.0.1';
 const port = Number(process.env.PORT || 3001);
 
 mkdirSync(dataDir, { recursive: true });
@@ -38,6 +38,13 @@ const server = createServer(async (request, response) => {
 
     if (request.method === 'POST') {
       await addMessage(request, response);
+      return;
+    }
+
+    if (request.method === 'DELETE') {
+      messages = [];
+      saveMessages();
+      sendJson(response, 200, { ok: true });
       return;
     }
 

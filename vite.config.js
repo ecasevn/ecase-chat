@@ -4,6 +4,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['ecase.net.vn', '.ecase.net.vn'],
     proxy: {
       '/api': 'http://127.0.0.1:3001',
     },
@@ -11,6 +12,7 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 4173,
+    allowedHosts: ['ecase.net.vn', '.ecase.net.vn'],
     proxy: {
       '/api': 'http://127.0.0.1:3001',
     },
