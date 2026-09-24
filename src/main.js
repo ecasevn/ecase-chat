@@ -32,7 +32,7 @@ function renderRoom() {
             <span>Tên</span>
             <input id="name-input" value="${escapeHtml(state.name)}" maxlength="28" autocomplete="nickname" aria-label="Tên hiển thị" />
           </label>
-          <div id="server-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang nối server</span></div>
+          <div id="connection-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang kết nối</span></div>
         </div>
       </header>
 
@@ -40,7 +40,7 @@ function renderRoom() {
         <section class="conversation">
           <div class="conversation-head">
             <h2>Chat chung</h2>
-            <p>Tin nhắn được lưu thẳng trên server và hiển thị cho mọi người.</p>
+            <p>Gửi tin nhắn và trò chuyện cùng mọi người trong phòng.</p>
           </div>
           <div id="message-list" class="message-list" aria-live="polite"></div>
           <div class="composer-wrap">
@@ -88,14 +88,14 @@ function renderAdmin() {
         </div>
         <div class="topbar-actions">
           <span id="message-total" class="admin-total">0 tin nhắn</span>
-          <div id="server-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang nối server</span></div>
+          <div id="connection-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang kết nối</span></div>
         </div>
       </header>
       <section class="admin-content">
         <div class="admin-toolbar">
           <div>
             <h2>Tất cả tin nhắn</h2>
-            <p>Dữ liệu đọc trực tiếp từ <code>data/messages.json</code>.</p>
+            <p>Xem, kiểm tra và dọn dẹp nội dung trong phòng.</p>
           </div>
           <button id="clear-messages" class="danger-button" type="button">Xóa toàn bộ</button>
         </div>
@@ -115,22 +115,22 @@ function renderDev() {
           <div class="brand-mark">e<span>·</span></div>
           <div>
             <p class="eyebrow">ECΛSE / DEV</p>
-            <h1>Developer monitor</h1>
+            <h1>Bảng kiểm tra</h1>
           </div>
         </div>
         <div class="topbar-actions">
           <span id="message-total" class="admin-total">0 tin nhắn</span>
-          <div id="server-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang nối server</span></div>
+          <div id="connection-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang kết nối</span></div>
         </div>
       </header>
       <section class="dev-content">
         <div class="dev-card">
           <p class="eyebrow">DEV PORT / 13000</p>
-          <h2>API đang được theo dõi</h2>
-          <p>Trang này đọc toàn bộ dữ liệu từ <code>/api/messages</code> mỗi giây để test server.</p>
+          <h2>Hoạt động phòng chat</h2>
+          <p>Theo dõi số lượng tin nhắn và nội dung mới theo thời gian thực.</p>
           <div class="dev-stats">
             <div><span>Tổng tin nhắn</span><strong id="dev-message-count">0</strong></div>
-            <div><span>Endpoint</span><strong>/api/messages</strong></div>
+            <div><span>Trạng thái</span><strong>Đang chạy</strong></div>
           </div>
         </div>
         <div id="message-list" class="message-list dev-message-list" aria-live="polite"></div>
@@ -150,23 +150,23 @@ async function loadMessages() {
     const devCount = document.querySelector('#dev-message-count');
     if (total) total.textContent = `${state.messages.length} tin nhắn`;
     if (devCount) devCount.textContent = String(state.messages.length);
-    setServerStatus('online', 'Server online');
+    setConnectionStatus('online', 'Đã kết nối');
     renderMessages();
   } catch (error) {
     console.error(error);
-    setServerStatus('offline', 'Server chưa nối');
+    setConnectionStatus('offline', 'Mất kết nối');
   }
 }
 
 async function clearMessages() {
-  if (!window.confirm('Xóa toàn bộ tin nhắn trên server?')) return;
+  if (!window.confirm('Xóa toàn bộ tin nhắn trong phòng?')) return;
   try {
     const response = await fetch('/api/messages', { method: 'DELETE' });
     if (!response.ok) throw new Error(`DELETE /api/messages failed: ${response.status}`);
     await loadMessages();
   } catch (error) {
     console.error(error);
-    showSystemNotice('Không xóa được dữ liệu trên server.');
+    showSystemNotice('Không thể xóa tin nhắn lúc này.');
   }
 }
 
@@ -191,7 +191,7 @@ async function sendMessage() {
   } catch (error) {
     console.error(error);
     input.value = text;
-    showSystemNotice('Không lưu được tin nhắn. Kiểm tra server rồi thử lại.');
+    showSystemNotice('Không thể gửi tin nhắn lúc này.');
   } finally {
     state.sending = false;
     document.querySelector('#send-button').disabled = false;
@@ -231,8 +231,8 @@ function renderMessages() {
   list.scrollTop = list.scrollHeight;
 }
 
-function setServerStatus(type, text) {
-  const status = document.querySelector('#server-status');
+function setConnectionStatus(type, text) {
+  const status = document.querySelector('#connection-status');
   if (!status) return;
   status.className = `status-pill ${type}`;
   status.innerHTML = `<span class="status-dot"></span><span>${escapeHtml(text)}</span>`;

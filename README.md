@@ -1,44 +1,40 @@
 # Ecase Chat
 
-Phòng chat công khai, API Node lưu toàn bộ tin nhắn vào `data/messages.json` trên server.
+Phòng chat công khai với ba giao diện riêng.
 
-## Ba cổng
+## Cổng truy cập
 
-| Cổng | Vai trò |
+| Cổng | Giao diện |
 |---|---|
-| `5173` | Người dùng bình thường |
-| `5174` | Admin: xem toàn bộ và xóa lịch sử |
-| `13000` | Dev monitor: xem trạng thái API và toàn bộ tin nhắn |
+| `5173` | Chat công khai |
+| `5174` | Quản lý tin nhắn |
+| `13000` | Bảng kiểm tra |
 
-Các cổng đều lắng nghe IPv4 `0.0.0.0` và cho phép:
+Các cổng chấp nhận:
 
 - `ecase.net.vn`
-- mọi subdomain của `ecase.net.vn` qua `.ecase.net.vn`
+- `*.ecase.net.vn`
 
-## Chạy development
+## Chạy
 
 ```bash
 npm install
 npm run dev
 ```
 
-Mở:
+Truy cập:
 
 ```text
-http://IP_SERVER:5173       # user
-http://IP_SERVER:5174       # admin
-http://IP_SERVER:13000      # dev
+http://IP_SERVER:5173
+http://IP_SERVER:5174
+http://IP_SERVER:13000
 ```
 
-Ba giao diện dùng chung API nội bộ ở port `3001`. Tin nhắn được lưu trên server và toàn bộ lịch sử được render, không dùng `localStorage` cho tin nhắn và không phân trang.
-
-## Chạy sau khi build
+## Chạy bản build
 
 ```bash
 npm run build
 npm run start:ports
 ```
 
-Admin hiện chưa có cơ chế đăng nhập, nên chỉ nên mở port `5174` trong mạng test nội bộ hoặc thêm auth/reverse proxy trước khi public Internet.
-
-File `data/messages.json` được tạo tự động và đã được gitignore để dữ liệu chat không bị commit lên GitHub.
+Ba giao diện dùng chung một lịch sử tin nhắn. Giao diện quản lý hiện dành cho môi trường kiểm thử nội bộ.
