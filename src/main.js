@@ -3,6 +3,7 @@ import './style.css';
 
 const app = document.querySelector('#app');
 const STORAGE_NAME = 'ecase-chat-name';
+const STORAGE_MESSAGES = 'ecase-chat-messages-public';
 const MAX_MESSAGES = 100;
 const HOST_PREFIX = 'ecase-chat-';
 
@@ -23,6 +24,7 @@ const state = {
 };
 
 state.name = cleanName(localStorage.getItem(STORAGE_NAME) || '') || makeGuestName();
+state.messages = loadMessages();
 state.roomLabel = 'Phòng chung';
 state.roomKey = 'public';
 state.hostId = `${HOST_PREFIX}public-host`;
@@ -54,7 +56,7 @@ function renderRoom() {
         <section class="conversation">
           <div class="conversation-head">
             <h2>Chat chung</h2>
-            <p>Vào là nói chuyện. Không cần tài khoản hay chọn phòng.</p>
+            <p>Vào là nói chuyện. Lịch sử được lưu trên trình duyệt này.</p>
           </div>
           <div id="message-list" class="message-list" aria-live="polite"></div>
           <div class="composer-wrap">
@@ -233,6 +235,7 @@ function handlePayload(connection, payload) {
 
   if (!state.isHost && payload.type === 'room:init') {
     state.messages = Array.isArray(payload.messages) ? payload.messages.slice(-MAX_MESSAGES) : [];
+    saveMessages();
     state.members = new Map((payload.members || []).map((member) => [member.id, member]));
     renderMessages();
     renderMembers();
@@ -275,6 +278,7 @@ function appendMessage(message) {
   if (!message?.text || state.messages.some((item) => item.id === message.id)) return;
   state.messages.push(message);
   state.messages = state.messages.slice(-MAX_MESSAGES);
+  saveMessages();
   renderMessages();
 }
 
@@ -366,6 +370,34 @@ function cleanName(value) {
 
 function cleanMessage(value) {
   return value.replace(/\u0000/g, '').trim().slice(0, 1000);
+}
+
+function loadMessages() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_MESSAGES) || '[]');
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((message) => message && typeof message.text === 'string')
+      .map((message) => ({
+        id: String(message.id || makeId()),
+        text: cleanMessage(message.text),
+        name: cleanName(String(message.name || 'Khách')) || 'Khách',
+        peerId: String(message.peerId || ''),
+        at: Number.isFinite(Number(message.at)) ? Number(message.at) : Date.now(),
+      }))
+      .filter((message) => message.text)
+      .slice(-MAX_MESSAGES);
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages() {
+  try {
+    localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(state.messages.slice(-MAX_MESSAGES)));
+  } catch {
+    // localStorage có thể bị tắt trong chế độ private hoặc trình duyệt giới hạn dung lượng.
+  }
 }
 
 function makeGuestName() {

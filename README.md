@@ -20,7 +20,9 @@ npm run preview
 
 Lệnh preview cũng lắng nghe trên IPv4 `0.0.0.0`.
 
-Project không có backend riêng và không lưu tin nhắn. Kết nối giữa các trình duyệt dùng WebRTC thông qua PeerJS Cloud ở bước signaling; dữ liệu chat đi trực tiếp qua peer đang giữ phòng. Vì vậy server chỉ cần phục vụ các file frontend tĩnh.
+Project không có backend riêng và không lưu tin nhắn trên server. Kết nối giữa các trình duyệt dùng WebRTC thông qua PeerJS Cloud ở bước signaling; dữ liệu chat đi trực tiếp qua peer đang giữ phòng. Vì vậy server chỉ cần phục vụ các file frontend tĩnh.
+
+Lịch sử tối đa 100 tin nhắn cũng được lưu trong `localStorage` của từng trình duyệt để giữ lại sau khi refresh. Xóa dữ liệu site sẽ xóa lịch sử local.
 
 ## Lưu ý vận hành
 
