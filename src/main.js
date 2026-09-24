@@ -19,81 +19,15 @@ const state = {
   messages: [],
   isHost: false,
   connected: false,
-  startedAt: null,
   reconnectTimer: null,
 };
 
-const defaultRoom = getRoomFromUrl() || makeRoomName();
-
-renderJoin();
-
-function renderJoin() {
-  cleanupSession();
-  app.innerHTML = `
-    <main class="page-shell join-shell">
-      <section class="join-card">
-        <div class="brand-lockup">
-          <div class="brand-mark">e<span>·</span></div>
-          <div>
-            <p class="eyebrow">ECΛSE / CHAT</p>
-            <h1>Nói chuyện, <em>tự nhiên.</em></h1>
-          </div>
-        </div>
-
-        <p class="intro">Tạo một cái tên, chọn phòng và gửi link cho mọi người. Không tài khoản, không cần cài app.</p>
-
-        <form id="join-form" class="join-form">
-          <label>
-            <span>Tên hiển thị</span>
-            <input id="name-input" name="name" maxlength="28" placeholder="Ví dụ: Minh Anh" autocomplete="nickname" required />
-          </label>
-          <label>
-            <span>Tên phòng</span>
-            <div class="room-input-wrap">
-              <input id="room-input" name="room" maxlength="32" value="${escapeHtml(defaultRoom)}" placeholder="Ví dụ: team-ecase" required />
-              <button id="random-room" type="button" class="icon-button" title="Tạo tên phòng ngẫu nhiên" aria-label="Tạo tên phòng ngẫu nhiên">↗</button>
-            </div>
-          </label>
-          <button class="primary-button" type="submit">Vào phòng <span>→</span></button>
-        </form>
-
-        <div class="join-note">
-          <span class="live-dot"></span>
-          <span>Chat realtime ngang hàng · tin nhắn không được lưu trên server</span>
-        </div>
-      </section>
-      <p class="page-footnote">Một góc nhỏ để nói chuyện cùng nhau.</p>
-    </main>
-  `;
-
-  const savedName = localStorage.getItem(STORAGE_NAME);
-  if (savedName) document.querySelector('#name-input').value = savedName;
-
-  document.querySelector('#random-room').addEventListener('click', () => {
-    document.querySelector('#room-input').value = makeRoomName();
-  });
-  document.querySelector('#join-form').addEventListener('submit', (event) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    startSession(String(form.get('name') || ''), String(form.get('room') || ''));
-  });
-}
-
-function startSession(rawName, rawRoom) {
-  state.name = cleanName(rawName);
-  state.roomLabel = cleanRoom(rawRoom);
-  if (!state.name || !state.roomLabel) return;
-
-  localStorage.setItem(STORAGE_NAME, state.name);
-  state.roomKey = makeRoomKey(state.roomLabel);
-  state.hostId = `${HOST_PREFIX}${state.roomKey}-host`;
-  state.startedAt = Date.now();
-  state.members = new Map();
-  state.messages = [];
-  history.replaceState({}, '', `${location.pathname}?room=${encodeURIComponent(state.roomLabel)}`);
-  renderRoom();
-  createHostPeer();
-}
+state.name = cleanName(localStorage.getItem(STORAGE_NAME) || '') || makeGuestName();
+state.roomLabel = 'Phòng chung';
+state.roomKey = 'public';
+state.hostId = `${HOST_PREFIX}public-host`;
+renderRoom();
+createHostPeer();
 
 function renderRoom() {
   app.innerHTML = `
@@ -103,36 +37,28 @@ function renderRoom() {
           <div class="brand-mark">e<span>·</span></div>
           <div>
             <p class="eyebrow">ECΛSE / CHAT</p>
-            <h1>${escapeHtml(state.roomLabel)}</h1>
+            <h1>Phòng chung</h1>
           </div>
         </div>
         <div class="topbar-actions">
+          <label class="name-control">
+            <span>Tên</span>
+            <input id="name-input" value="${escapeHtml(state.name)}" maxlength="28" autocomplete="nickname" aria-label="Tên hiển thị" />
+          </label>
+          <div class="online-count"><span class="live-dot"></span><span id="member-count">1 online</span></div>
           <div id="connection-status" class="status-pill connecting"><span class="status-dot"></span><span>Đang kết nối</span></div>
-          <button id="share-room" class="secondary-button">Chia sẻ phòng <span>↗</span></button>
-          <button id="leave-room" class="ghost-button" title="Rời phòng" aria-label="Rời phòng">×</button>
         </div>
       </header>
 
       <div class="chat-layout">
-        <aside class="members-panel">
-          <div class="panel-heading">
-            <span>Đang ở đây</span>
-            <span id="member-count" class="count-badge">1</span>
-          </div>
-          <div id="member-list" class="member-list"></div>
-          <div class="privacy-card">
-            <span class="privacy-icon">⌁</span>
-            <div>
-              <strong>Ngang hàng</strong>
-              <p>Kết nối trực tiếp giữa các trình duyệt. Phòng sẽ hoạt động khi có ít nhất một người đang mở.</p>
-            </div>
-          </div>
-        </aside>
-
         <section class="conversation">
+          <div class="conversation-head">
+            <h2>Chat chung</h2>
+            <p>Vào là nói chuyện. Không cần tài khoản hay chọn phòng.</p>
+          </div>
           <div id="message-list" class="message-list" aria-live="polite"></div>
           <div class="composer-wrap">
-            <div id="composer-hint" class="composer-hint">Bạn đang nói chuyện với mọi người trong phòng</div>
+            <div id="composer-hint" class="composer-hint">Tin nhắn sẽ hiện với mọi người đang online</div>
             <form id="message-form" class="composer">
               <textarea id="message-input" rows="1" maxlength="1000" placeholder="Viết gì đó..." aria-label="Nội dung tin nhắn"></textarea>
               <button type="submit" class="send-button" title="Gửi tin nhắn" aria-label="Gửi tin nhắn">↑</button>
@@ -143,8 +69,13 @@ function renderRoom() {
     </main>
   `;
 
-  document.querySelector('#share-room').addEventListener('click', shareRoom);
-  document.querySelector('#leave-room').addEventListener('click', leaveRoom);
+  document.querySelector('#name-input').addEventListener('input', (event) => {
+    const nextName = cleanName(event.currentTarget.value);
+    if (!nextName) return;
+    state.name = nextName;
+    localStorage.setItem(STORAGE_NAME, state.name);
+  });
+  document.querySelector('#name-input').addEventListener('change', updateProfile);
   document.querySelector('#message-form').addEventListener('submit', (event) => {
     event.preventDefault();
     sendMessage();
@@ -158,6 +89,16 @@ function renderRoom() {
   document.querySelector('#message-input').addEventListener('input', autoGrow);
   renderMembers();
   renderMessages();
+}
+
+function updateProfile() {
+  const member = state.members.get(state.peerId);
+  if (member) member.name = state.name;
+  if (state.isHost) {
+    broadcastPresence();
+  } else if (state.hostConnection?.open) {
+    state.hostConnection.send({ type: 'profile:update', name: state.name });
+  }
 }
 
 function createHostPeer() {
@@ -282,6 +223,14 @@ function handlePayload(connection, payload) {
     return;
   }
 
+  if (state.isHost && payload.type === 'profile:update') {
+    const member = state.members.get(connection.peer);
+    if (member) member.name = cleanName(payload.name) || 'Khách';
+    broadcastPresence();
+    renderMembers();
+    return;
+  }
+
   if (!state.isHost && payload.type === 'room:init') {
     state.messages = Array.isArray(payload.messages) ? payload.messages.slice(-MAX_MESSAGES) : [];
     state.members = new Map((payload.members || []).map((member) => [member.id, member]));
@@ -337,21 +286,9 @@ function broadcastPresence() {
 }
 
 function renderMembers() {
-  const list = document.querySelector('#member-list');
   const count = document.querySelector('#member-count');
-  if (!list || !count) return;
-  count.textContent = String(state.members.size || 1);
-  const members = [...state.members.values()];
-  if (!members.length) {
-    members.push({ id: state.peerId || 'me', name: state.name, isHost: state.isHost });
-  }
-  list.innerHTML = members.map((member) => `
-    <div class="member-row">
-      <span class="avatar" style="--avatar-color: ${avatarColor(member.name)}">${escapeHtml(initials(member.name))}</span>
-      <span class="member-name">${escapeHtml(member.name)}${member.id === state.peerId ? ' <small>(bạn)</small>' : ''}</span>
-      ${member.isHost ? '<span class="host-label">chủ phòng</span>' : ''}
-    </div>
-  `).join('');
+  if (!count) return;
+  count.textContent = `${state.members.size || 1} online`;
 }
 
 function renderMessages() {
@@ -361,8 +298,8 @@ function renderMessages() {
     list.innerHTML = `
       <div class="empty-state">
         <div class="empty-orb">✦</div>
-        <h2>Phòng đang yên tĩnh</h2>
-        <p>Gửi tin nhắn đầu tiên, hoặc chia sẻ link để mời mọi người vào.</p>
+        <h2>Chưa có tin nhắn</h2>
+        <p>Viết câu đầu tiên để bắt đầu cuộc trò chuyện.</p>
       </div>
     `;
     return;
@@ -385,35 +322,6 @@ function renderMessages() {
   list.scrollTop = list.scrollHeight;
 }
 
-async function shareRoom() {
-  const link = `${location.origin}${location.pathname}?room=${encodeURIComponent(state.roomLabel)}`;
-  try {
-    await navigator.clipboard.writeText(link);
-    showSystemNotice('Đã sao chép link phòng. Gửi link này cho mọi người nhé.');
-  } catch {
-    showSystemNotice(link);
-  }
-}
-
-function leaveRoom() {
-  cleanupSession();
-  history.replaceState({}, '', location.pathname);
-  renderJoin();
-}
-
-function cleanupSession() {
-  clearTimeout(state.reconnectTimer);
-  state.hostConnection?.close();
-  for (const connection of state.connections.values()) connection.close();
-  state.peer?.destroy();
-  state.peer = null;
-  state.hostConnection = null;
-  state.connections.clear();
-  state.members.clear();
-  state.messages = [];
-  state.connected = false;
-}
-
 function scheduleHostRetry() {
   clearTimeout(state.reconnectTimer);
   state.reconnectTimer = setTimeout(() => {
@@ -434,7 +342,7 @@ function showSystemNotice(message) {
   hint.classList.add('notice');
   setTimeout(() => {
     if (hint) {
-      hint.textContent = 'Bạn đang nói chuyện với mọi người trong phòng';
+      hint.textContent = 'Tin nhắn sẽ hiện với mọi người đang online';
       hint.classList.remove('notice');
     }
   }, 4500);
@@ -452,34 +360,16 @@ function autoGrow(event) {
   event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 140)}px`;
 }
 
-function getRoomFromUrl() {
-  return new URLSearchParams(location.search).get('room')?.trim() || '';
-}
-
 function cleanName(value) {
   return value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 28);
-}
-
-function cleanRoom(value) {
-  return value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 32);
 }
 
 function cleanMessage(value) {
   return value.replace(/\u0000/g, '').trim().slice(0, 1000);
 }
 
-function makeRoomKey(label) {
-  const normalized = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  let hash = 2166136261;
-  for (const character of normalized) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
-  const slug = normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 16) || 'room';
-  return `${slug}-${(hash >>> 0).toString(36)}`;
-}
-
-function makeRoomName() {
-  const first = ['mây', 'nắng', 'lá', 'gió', 'sóng', 'sao', 'trà', 'đom-đóm'];
-  const second = ['xanh', 'nhẹ', 'vui', 'nhỏ', 'đêm', 'sáng', 'ấm', 'bay'];
-  return `${first[Math.floor(Math.random() * first.length)]}-${second[Math.floor(Math.random() * second.length)]}`;
+function makeGuestName() {
+  return `Khách-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function makeId() {

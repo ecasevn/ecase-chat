@@ -1,6 +1,6 @@
 # Ecase Chat
 
-Một phòng chat realtime tối giản, chạy hoàn toàn ở frontend với Vite.
+Một phòng chat realtime công khai, chạy hoàn toàn ở frontend với Vite.
 
 ## Chạy local
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Mở URL Vite ở hai tab hoặc hai thiết bị, nhập cùng tên phòng và hai tên hiển thị khác nhau. Người tạo phòng cần giữ tab mở để làm host tạm thời.
+Vite đã được cấu hình lắng nghe trên IPv4 `0.0.0.0`. Truy cập từ máy khác bằng `http://IP_SERVER:5173` (hoặc port bạn đã cấu hình firewall/proxy). Mở link là vào ngay phòng chung; tên khách được tạo tự động và có thể sửa ngay trên thanh đầu trang. Người tạo phòng cần giữ tab mở để làm host tạm thời.
 
 ## Build để deploy
 
@@ -17,6 +17,8 @@ Mở URL Vite ở hai tab hoặc hai thiết bị, nhập cùng tên phòng và 
 npm run build
 npm run preview
 ```
+
+Lệnh preview cũng lắng nghe trên IPv4 `0.0.0.0`.
 
 Project không có backend riêng và không lưu tin nhắn. Kết nối giữa các trình duyệt dùng WebRTC thông qua PeerJS Cloud ở bước signaling; dữ liệu chat đi trực tiếp qua peer đang giữ phòng. Vì vậy server chỉ cần phục vụ các file frontend tĩnh.
 
